@@ -28,7 +28,8 @@ import javax.xml.bind.annotation.XmlRootElement;
 @XmlRootElement
 @NamedQueries({
     @NamedQuery(name = "ReservationTravelingEntity.findAll", query = "SELECT r FROM ReservationTravelingEntity r"),
-    @NamedQuery(name = "ReservationTravelingEntity.findById", query = "SELECT r FROM ReservationTravelingEntity r WHERE r.id = :id")})
+    @NamedQuery(name = "ReservationTravelingEntity.findById", query = "SELECT r FROM ReservationTravelingEntity r WHERE r.id = :id"),
+    @NamedQuery(name = "ReservationTravelingEntity.findByReservationId", query = "SELECT r FROM ReservationTravelingEntity r WHERE r.reservationId = :rid")})
 public class ReservationTravelingEntity implements Serializable {
     private static final long serialVersionUID = 1L;
     // @Max(value=?)  @Min(value=?)//if you know range of your decimal fields consider using these annotations to enforce field validation

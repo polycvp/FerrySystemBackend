@@ -1,23 +1,12 @@
 package ferry.implmenetation;
 
 import ferry.contract.FerryContract;
-import ferry.dto.AbstractAccount;
-import ferry.dto.AccountDetail;
-import ferry.dto.AccountSummary;
-import ferry.dto.ReservationDetail;
-import ferry.dto.ReservationSummary;
-import ferry.dto.TrafficDetail;
-import ferry.dto.TrafficSummary;
-import ferry.dto.TravelDetail;
-import ferry.dto.TravelSummary;
-import ferry.entity.Person;
-import ferry.eto.InvalidAccountException;
-import ferry.eto.InvalidRouteException;
-import ferry.eto.NoFerriesFoundException;
-import ferry.eto.NoScheduleException;
-import ferry.eto.NoSuchAccountException;
-import ferry.eto.NoSuchReservationException;
+import ferry.dto.*;
+import ferry.entity.*;
+import ferry.eto.*;
+import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Date;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import javax.annotation.Resource;
@@ -52,24 +41,130 @@ public class FerryManager implements FerryContract {
 
     @Override
     public ReservationSummary makeReservation(ReservationDetail resDetail) throws NoSuchReservationException {
-        
-        throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
+        try {
+            Reservation r = new Reservation();
+            Person pers = em.find(Person.class, resDetail.getReserver().getId());
+            r.setBookerId(pers);
+            r.setHasArrived('N');
+            r.setReservationNumber(resDetail.getReservationSerialNumber());
+            r.setTotalprice(resDetail.getTotalPrice());
+
+            Collection<PassengerDTO> passengers = resDetail.getPassengers();
+            Collection<AbstractVehicle> vehicles = resDetail.getVehicles();
+            Collection<ReservationTravelingEntity> colRte = new ArrayList<ReservationTravelingEntity>();
+            for (PassengerDTO p : passengers) {
+                Passanger pas = new Passanger();
+                pas.setPassangerName(p.getName());
+                em.persist(pas);
+                ReservationTravelingEntity rte = new ReservationTravelingEntity();
+                rte.setReservationId(r);
+                TravelingEntity te = new TravelingEntity();
+                te.setIsresident(pers.getIsresident());
+                te.setPassangerreference(pas.getId().toBigInteger());
+                rte.setTravelingEntityId(te);
+                em.persist(te);
+                em.persist(rte);
+                colRte.add(rte);
+            }
+            for (AbstractVehicle v : vehicles) {
+                Vehicle veh = new Vehicle();
+                veh.setRegno(v.getLicensePlate());
+                em.persist(veh);
+                ReservationTravelingEntity rte = new ReservationTravelingEntity();
+                rte.setReservationId(r);
+                TravelingEntity te = new TravelingEntity();
+                te.setIsresident(pers.getIsresident());
+                te.setVehiclereference(veh.getId().toBigInteger());
+                rte.setTravelingEntityId(te);
+                em.persist(te);
+                em.persist(rte);
+                colRte.add(rte);
+            }
+            r.setReservationTravelingEntityCollection(colRte);
+
+            String departurePort = resDetail.getDeparturePort();
+            Date departureDate = resDetail.getDepartureTime();
+            String destinationPort = resDetail.getDestinationPort();
+            Harbour harb = (Harbour) em.createNamedQuery("Harbour.findByName").setParameter("name", departurePort).getSingleResult();
+            for (Route route : harb.getRouteCollection()) {
+                if (route.getIdDestination().getName().equals(destinationPort)) {
+                    for (Departure d : route.getDepartureCollection()) {
+                        if (d.getDepartureDate().equals(departureDate)) {
+                            r.setDepartureId(d);
+                        }
+                    }
+                }
+            }
+            em.persist(r);
+            return asm.createReservationSummary(r);
+        } catch (Exception e) {
+            throw new NoSuchReservationException(resDetail.getReserver().getId(), "Error making the reservation");
+        }
     }
 
     @Override
     public boolean deleteReservation(int reservationId) throws NoSuchReservationException {
-        throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
+        try {
+            Reservation r = em.find(Reservation.class, reservationId);
+            Collection<ReservationTravelingEntity> crte = em.createNamedQuery("ReservationTravelingEntity.findByReservationId").setParameter("rid", reservationId).getResultList();
+            for (ReservationTravelingEntity rte : crte) {
+                TravelingEntity te = em.find(TravelingEntity.class, rte.getTravelingEntityId());
+                if (te.getPassangerreference().longValue() >= 0) {
+                    Passanger passanger = em.find(Passanger.class, te.getPassangerreference());
+                    em.remove(passanger);
+                } else {
+                    if (te.getVehiclereference().longValue() >= 0) {
+                        Vehicle veh = em.find(Vehicle.class, te.getVehiclereference());
+                        em.remove(veh);
+                    }
+                }
+                em.remove(rte);
+            }
+            em.remove(r);
+            return true;
+        } catch (Exception e) {
+            return false;
+        }
     }
 
     @Override
     public ReservationSummary editReservation(ReservationDetail resDetail) throws NoSuchReservationException {
+        Reservation r = (Reservation) em.createNamedQuery("Reservation.findByReservationNumber").setParameter("reservationNumber", resDetail.getReservationSerialNumber()).getSingleResult();
+        if (!resDetail.getDepartureTime().equals(r.getDepartureId().getDepartureDate())) {
+
+        }
+        Collection<ReservationTravelingEntity> crte = em.createNamedQuery("ReservationTravelingEntity.findByReservationId").setParameter("rid", r.getId().longValue()).getResultList();
+        for (ReservationTravelingEntity rte : crte) {
+            TravelingEntity te = em.find(TravelingEntity.class, rte.getTravelingEntityId());
+            if (te.getPassangerreference().longValue() >= 0) {
+                Passanger passanger = em.find(Passanger.class, te.getPassangerreference());
+                boolean control = false;
+                for (PassengerDTO pdto : resDetail.getPassengers()) {
+                    if (passanger.getId().equals(pdto.getId())) {
+                        control = true;
+                        if (!passanger.getPassangerName().equals(pdto.getName())) {
+                            passanger.setPassangerName(pdto.getName());
+                        }
+                    }
+                }
+                if (!control) {
+                    //save the new passanger into the reservation
+                }
+            } else {
+                if (te.getVehiclereference().longValue() >= 0) {
+                    Vehicle veh = em.find(Vehicle.class, te.getVehiclereference());
+                    //edit vehicle and save new vehicles in the db
+                }
+            }
+            em.remove(rte);
+        }
         throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
     }
 
     @Override
     public boolean isUserResident(AbstractAccount accDTO) {
         Person p = em.find(Person.class, accDTO.getId());
-        return p.getIsresident().equals('T');
+        return p.getIsresident().equals('Y');
     }
 
     @Override
@@ -78,8 +173,7 @@ public class FerryManager implements FerryContract {
         if (result == 0) {
             em.persist(dsm.createPerson(accDetail));
             return true;
-        }
-        else {
+        } else {
             throw new InvalidAccountException("Email address already exists");
         }
     }
@@ -100,10 +194,10 @@ public class FerryManager implements FerryContract {
 
     @Override
     public AccountSummary deleteAccount(AccountDetail accDetail) throws NoSuchAccountException {
-           try {
-        Person p = em.find(Person.class, accDetail.getId());
-        em.remove(p);
-        return asm.createAccountSummary(p);
+        try {
+            Person p = em.find(Person.class, accDetail.getId());
+            em.remove(p);
+            return asm.createAccountSummary(p);
         } catch (Exception e) {
             throw new NoSuchAccountException("Login failed");
         }
@@ -111,15 +205,15 @@ public class FerryManager implements FerryContract {
 
     @Override
     public boolean editAccount(AccountDetail accDetail) throws NoSuchAccountException {
-         try {
-        Person p = em.find(Person.class, accDetail.getId());
-        p.setAddress(accDetail.getAddress());
-        p.setCpr(accDetail.getCprNo());
-        p.setEmail(accDetail.getEmail());
-        p.setPersonName(accDetail.getName());
-        
-        em.merge(p);
-        return true;
+        try {
+            Person p = em.find(Person.class, accDetail.getId());
+            p.setAddress(accDetail.getAddress());
+            p.setCpr(accDetail.getCprNo());
+            p.setEmail(accDetail.getEmail());
+            p.setPersonName(accDetail.getName());
+
+            em.merge(p);
+            return true;
         } catch (Exception e) {
             throw new NoSuchAccountException("Login failed");
         }
@@ -127,9 +221,9 @@ public class FerryManager implements FerryContract {
 
     @Override
     public AccountDetail showAccount(AbstractAccount acc) throws NoSuchAccountException {
-         try {
-        Person p = em.find(Person.class, acc.getId());
-        return asm.createAccountDetail(p);
+        try {
+            Person p = em.find(Person.class, acc.getId());
+            return asm.createAccountDetail(p);
         } catch (Exception e) {
             throw new NoSuchAccountException("Login failed");
         }
