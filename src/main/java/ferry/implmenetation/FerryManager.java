@@ -4,6 +4,7 @@ import ferry.contract.FerryContract;
 import ferry.dto.*;
 import ferry.entity.*;
 import ferry.eto.*;
+import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Date;
@@ -17,6 +18,7 @@ import javax.persistence.PersistenceContext;
 @Stateless
 public class FerryManager implements FerryContract {
 
+    private int i = 30;
     private Assembler asm = new Assembler();
     private Dissassembler dsm = new Dissassembler();
 
@@ -28,7 +30,7 @@ public class FerryManager implements FerryContract {
     public FerryManager() {
 
     }
-
+    
     @Override
     public Collection<TrafficSummary> getTrafficInformation(TrafficDetail trafficDetail) throws InvalidRouteException, NoFerriesFoundException {
         throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
@@ -44,6 +46,8 @@ public class FerryManager implements FerryContract {
         try {
             Reservation r = new Reservation();
             Person pers = em.find(Person.class, resDetail.getReserver().getId());
+            //increment every time based on previous ID
+            r.setId(new BigDecimal(i)); i++;
             r.setBookerId(pers);
             r.setHasArrived('N');
             r.setReservationNumber(resDetail.getReservationSerialNumber());
@@ -57,8 +61,10 @@ public class FerryManager implements FerryContract {
                 pas.setPassangerName(p.getName());
                 em.persist(pas);
                 ReservationTravelingEntity rte = new ReservationTravelingEntity();
+                rte.setId(new BigDecimal(i)); i++;
                 rte.setReservationId(r);
                 TravelingEntity te = new TravelingEntity();
+                te.setId(new BigDecimal(i)); i++;
                 te.setIsresident(pers.getIsresident());
                 te.setPassangerreference(pas.getId().toBigInteger());
                 rte.setTravelingEntityId(te);
@@ -71,8 +77,10 @@ public class FerryManager implements FerryContract {
                 veh.setRegno(v.getLicensePlate());
                 em.persist(veh);
                 ReservationTravelingEntity rte = new ReservationTravelingEntity();
+                rte.setId(new BigDecimal(i)); i++;
                 rte.setReservationId(r);
                 TravelingEntity te = new TravelingEntity();
+                te.setId(new BigDecimal(i)); i++;
                 te.setIsresident(pers.getIsresident());
                 te.setVehiclereference(veh.getId().toBigInteger());
                 rte.setTravelingEntityId(te);

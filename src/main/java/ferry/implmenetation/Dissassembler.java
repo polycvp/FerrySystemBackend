@@ -2,12 +2,15 @@
 package ferry.implmenetation;
 
 import ferry.dto.AccountDetail;
+import ferry.entity.Person;
+import java.math.BigDecimal;
 
 
 public class Dissassembler {
 
-    Object createPerson(AccountDetail accDetail) {
-        throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
+    public Person createPerson(AccountDetail accDetail) {
+        Person p = new Person(new BigDecimal(accDetail.getId()), accDetail.getName(), accDetail.getEmail(), accDetail.getPassword(), accDetail.getCprNo(), accDetail.getAddress(),'N');
+        return p;
     }
     
 }

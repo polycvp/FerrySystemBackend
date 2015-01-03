@@ -10,16 +10,19 @@ import ferry.entity.Reservation;
 
 public class Assembler {
 
-    AccountDetail createAccountDetail(Person p) {
-        throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
+    public AccountDetail createAccountDetail(Person p) {
+        AccountDetail acc = new AccountDetail(p.getId().intValue(), p.getCpr(), p.getPassword(), p.getPersonName(), p.getEmail(), p.getAddress());
+        return acc;
     }
 
-    AccountSummary createAccountSummary(Person p) {
-        throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
+    public AccountSummary createAccountSummary(Person p) {
+        AccountSummary acc = new AccountSummary(p.getId().intValue(), p.getCpr(),p.getPersonName(), p.getEmail(), p.getAddress());
+        return acc;
     }
 
-    ReservationSummary createReservationSummary(Reservation r) {
-        throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
+    public ReservationSummary createReservationSummary(Reservation r) {
+        ReservationSummary res = new ReservationSummary(r.getReservationNumber(), null, r.getTotalprice().toString());
+        return res;
     }
     
 }
