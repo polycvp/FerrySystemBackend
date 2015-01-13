@@ -4,6 +4,7 @@ import ferry.contract.test.FerryAccountTest;
 import ferry.contract.test.FerryContractHolder;
 import ferry.contract.test.FerryReservationTest;
 import ferry.implmenetation.FerryManager;
+import javax.ejb.embeddable.EJBContainer;
 import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Before;
@@ -15,9 +16,13 @@ import org.junit.runners.Suite;
 @Suite.SuiteClasses({FerryAccountTest.class,FerryReservationTest.class})
 public class SimpleBackendTest {
 
+    private static EJBContainer container;
+    
     @BeforeClass
     public static void setUpClass() throws Exception {
-        FerryContractHolder.contract = new FerryManager();
+        container = EJBContainer.createEJBContainer();
+        
+        FerryContractHolder.contract = (FerryManager) container.getContext().lookup("java:global/classes/FerryManager");
     }
 
     @AfterClass
