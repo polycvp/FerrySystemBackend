@@ -22,10 +22,10 @@ public class FerryManager implements FerryContract {
     private Assembler asm = new Assembler();
     private Dissassembler dsm = new Dissassembler();
 
-    @PersistenceContext(unitName = "ferry_ls-FerryMavenBackend_ejb_1.0-SNAPSHOTPU")
-    private EntityManager em;
     @Resource
     private javax.transaction.UserTransaction utx;
+    @PersistenceContext(unitName = "ferry_ls-FerryMavenBackend_ejb_1.0-SNAPSHOTPU")
+    private EntityManager em;
 
     public FerryManager() {
 
@@ -240,6 +240,17 @@ public class FerryManager implements FerryContract {
     // Add business logic below. (Right-click in editor and choose
     // "Insert Code > Add Business Method")
     public void persist(Object object) {
+        try {
+            utx.begin();
+            em.persist(object);
+            utx.commit();
+        } catch (Exception e) {
+            Logger.getLogger(getClass().getName()).log(Level.SEVERE, "exception caught", e);
+            throw new RuntimeException(e);
+        }
+    }
+
+    public void persist1(Object object) {
         try {
             utx.begin();
             em.persist(object);
